@@ -2,7 +2,6 @@
 """
 服务启动
 """
-from time import sleep
 
 import pymongo
 from mecloud.helper.DbHelper import Db
@@ -14,9 +13,4 @@ if __name__ == '__main__':
     Db.name = MongoDbConfig.NAME
     Db.conn = pymongo.MongoClient(MongoDbConfig.HOST, MongoDbConfig.PORT)
     Db.conn.admin.authenticate(MongoDbConfig.USER, MongoDbConfig.PASSWORD)
-    num = 0
-    while num < 10:
-        num += 1
-        print num
-        sleep(5)
-    # start_face_cal()
+    start_face_cal()

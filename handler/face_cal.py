@@ -98,7 +98,7 @@ def insert_data_to_queue():
     :return:
     """
     left_media_count = get_media_count_from_redis()
-    if not left_media_count or left_media_count < MEDIA_COUNT_THRESHOLD:
+    if left_media_count < MEDIA_COUNT_THRESHOLD:
         media_ids = get_media_id_list_from_db()
         save_media_to_redis(media_ids)
         last_cal_id = media_ids[-1]
