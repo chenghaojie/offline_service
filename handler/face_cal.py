@@ -2,17 +2,22 @@
 """
 计算人脸向量相关
 """
+import json
 
+import datetime
+import requests
 from mecloud.helper.RedisHelper import RedisDb
-from mecloud.helper.ClassHelper import *
+from mecloud.helper.ClassHelper import ClassHelper
+from mecloud.model.MeObject import MeObject
+
+from lib import log
 
 
 LAST_CAL_ID_EXPIRE_TIME = 3600 * 24 * 30    # 缓存一个月,应该够了吧
 MEDIA_COUNT_LIMIT = 1000
 MEDIA_COUNT_THRESHOLD = 50
 
-IMAGE_URL = "http://renrenimg0724.oss-cn-beijing.aliyuncs.com/{0}.{1}"
-FEATURE_URL = "http://g00.me-yun.com:8001/local/feature?path=/tmp/renrenimg0724/{0}.{1}"
+FEATURE_URL = "http://g00.me-yun.com:8001/local/feature?path=/tmp/renrenimg0724/%s.jpg"    # 人脸特征计算接口url
 
 
 def _build_last_cal_id_redis_key():
@@ -92,17 +97,48 @@ def get_media_count_from_redis():
     return client.llen(redis_key) or 0
 
 
-def insert_data_to_queue():
+def get_faces_from_media_id(media_id):
     """
-    往队列里添加数据
+    根据图片id计算出其中的人脸的特征向量
+    通过http请求
+    :param media_id:
     :return:
     """
-    left_media_count = get_media_count_from_redis()
-    if left_media_count < MEDIA_COUNT_THRESHOLD:
-        media_ids = get_media_id_list_from_db()
-        save_media_to_redis(media_ids)
-        last_cal_id = media_ids[-1]
-        set_last_cal_id(last_cal_id)
+    url = FEATURE_URL % media_id
+    res = requests.get(url)
+    data = json.loads(res.text)
+    error_msg = data.get('errMsg')
+    if error_msg:
+        log.err('media %s calculate error: %s' % (media_id, error_msg))
+        return []
+    faces = data['facer']
+    if not faces:
+        log.info('media without faces: %s' % media_id)
+    return faces
+
+
+def create_face_db(face_info):
+    """
+    创建数据库face记录
+    :param face_info:
+    :return:
+    """
+    now = datetime.datetime.now()
+    face = MeObject('Face')
+    face['media'] = face_info['media_id']
+    face['rect'] = face_info['rect']
+    face['feature'] = face_info['feature']
+    face['detectScore'] = face_info['detectScore']
+    face['landmarkScore'] = face_info['landmarkScore']
+    face['acl'] = {
+        "*": {
+            "read": True,
+            "write": True
+        }
+    }
+    face['createAt'] = face['updateAt'] = now
+    face.save()
+    return face.objectId
 
 
 def start_face_cal():
@@ -116,6 +152,31 @@ def start_face_cal():
     while client.llen(redis_key):
         media_id = client.lpop(redis_key)
         media = media_helper.get(media_id)
-        print media
-        pass
+        if not media:
+            log.err('media not found: %s' % media_id)
+            continue
+        faces = get_faces_from_media_id(media_id)
+        face_ids = []
+        for face_info in faces:
+            face_info['media_id'] = media_id
+            face_id = create_face_db(face_info)
+            face_ids.append(face_id)
+        # 没有获取到的话就不更新了
+        if face_ids:
+            media.faces = face_ids
+            media.save()
 
+
+def insert_data_to_queue():
+    """
+    往队列里添加数据
+    :return:
+    """
+    left_media_count = get_media_count_from_redis()
+    if left_media_count < MEDIA_COUNT_THRESHOLD:
+        media_ids = get_media_id_list_from_db()
+        if not media_ids:
+            return
+        save_media_to_redis(media_ids)
+        last_cal_id = media_ids[-1]
+        set_last_cal_id(last_cal_id)
