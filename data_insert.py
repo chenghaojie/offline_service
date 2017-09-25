@@ -3,8 +3,14 @@
 服务启动
 """
 
+from time import sleep
+
 from handler.face_cal import insert_data_to_queue
 
 
 if __name__ == '__main__':
-    insert_data_to_queue()
+    while True:
+        insert_data_to_queue()
+        # 每隔5秒钟跑一次
+        sleep(5)
+

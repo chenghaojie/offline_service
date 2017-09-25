@@ -11,7 +11,6 @@ import requests
 from mecloud.helper.DbHelper import Db
 from mecloud.helper.RedisHelper import RedisDb
 from mecloud.helper.ClassHelper import ClassHelper
-from mecloud.model.MeObject import MeObject
 
 from lib import log
 from lib.config import MongoDbConfig
@@ -130,22 +129,16 @@ def create_face_db(face_info):
     :param face_info:
     :return:
     """
+    face_helper = ClassHelper('Face')
     now = datetime.datetime.now()
-    face = MeObject('Face')
-    face['media'] = face_info['media_id']
-    face['rect'] = face_info['rect']
-    face['feature'] = face_info['feature']
-    face['detectScore'] = face_info['detectScore']
-    face['landmarkScore'] = face_info['landmarkScore']
-    face['acl'] = {
-        "*": {
+    face_info['createAt'] = face_info['updateAt'] = now
+    face_info['acl'] = {
+        '*': {
             "read": True,
             "write": True
         }
     }
-    face['createAt'] = face['updateAt'] = now
-    face.save()
-    return face.objectId
+    return face_helper.create(face_info)
 
 
 def start_face_cal():
@@ -165,13 +158,12 @@ def start_face_cal():
         faces = get_faces_from_media_id(media_id)
         face_ids = []
         for face_info in faces:
-            face_info['media_id'] = media_id
-            face_id = create_face_db(face_info)
-            face_ids.append(face_id)
+            face_info['media'] = media_id
+            face = create_face_db(face_info)
+            face_ids.append(face['_id'])
         # 没有获取到的话就不更新了
         if face_ids:
-            media.faces = face_ids
-            media.save()
+            media_helper.update(media_id, {'$set': {'faces': face_ids}})
 
 
 def insert_data_to_queue():
@@ -187,4 +179,3 @@ def insert_data_to_queue():
         save_media_to_redis(media_ids)
         last_cal_id = media_ids[-1]
         set_last_cal_id(last_cal_id)
-

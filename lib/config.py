@@ -12,8 +12,14 @@ class RedisDBConfig(object):
 
 
 class MongoDbConfig(object):
+    # HOST = 'n01.me-yun.com'
+    # PORT = 3717
+    # PASSWORD = '2egRPV4LaDtoNUE18ZSwB7'
+    # NAME = 'honey'
+    # USER = 'root'
+
     HOST = 'n01.me-yun.com'
-    PORT = 3717
-    PASSWORD = '2egRPV4LaDtoNUE18ZSwB7'
+    PORT = 27017
+    PASSWORD = 'biliankeji'
     NAME = 'honey'
-    USER = 'root'
+    USER = 'biliankeji'
