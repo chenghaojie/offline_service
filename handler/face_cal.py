@@ -5,19 +5,26 @@
 import json
 
 import datetime
+
+import pymongo
 import requests
+from mecloud.helper.DbHelper import Db
 from mecloud.helper.RedisHelper import RedisDb
 from mecloud.helper.ClassHelper import ClassHelper
 from mecloud.model.MeObject import MeObject
 
 from lib import log
-
+from lib.config import MongoDbConfig
 
 LAST_CAL_ID_EXPIRE_TIME = 3600 * 24 * 30    # 缓存一个月,应该够了吧
 MEDIA_COUNT_LIMIT = 1000
 MEDIA_COUNT_THRESHOLD = 50
 
 FEATURE_URL = "http://g00.me-yun.com:8001/local/feature?path=/tmp/renrenimg0724/%s.jpg"    # 人脸特征计算接口url
+
+Db.name = MongoDbConfig.NAME
+Db.conn = pymongo.MongoClient(MongoDbConfig.HOST, MongoDbConfig.PORT)
+Db.conn.admin.authenticate(MongoDbConfig.USER, MongoDbConfig.PASSWORD)
 
 
 def _build_last_cal_id_redis_key():
