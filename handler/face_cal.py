@@ -187,3 +187,4 @@ def insert_data_to_queue():
         save_media_to_redis(media_ids)
         last_cal_id = media_ids[-1]
         set_last_cal_id(last_cal_id)
+
