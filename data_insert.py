@@ -11,6 +11,6 @@ from handler.face_cal import insert_data_to_queue
 if __name__ == '__main__':
     while True:
         insert_data_to_queue()
-        # 每隔5秒钟跑一次
-        sleep(5)
+        # 每隔10秒钟跑一次
+        sleep(10)
 

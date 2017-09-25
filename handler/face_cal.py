@@ -66,7 +66,7 @@ def get_media_id_list_from_db():
     query = {'faces': {'$exists': False}}
     if last_id:
         query['_id'] = {'$gt': last_id}
-    medias = media_helper.find(query=query, keys={"_id": 1}, sort={"_id": 1}, limit=MEDIA_COUNT_LIMIT)
+    medias = media_helper.find(query=query, keys={"_id": 1}, sort=[("_id", 1)], limit=MEDIA_COUNT_LIMIT)
     media_id_list = []
     for media in medias:
         media_id_list.append(media['_id'])
@@ -147,7 +147,7 @@ def start_face_cal():
     :return:
     """
     media_helper = ClassHelper('Media')
-    client = RedisDb.get_connection()
+    client = RedisDb.get_connection(dbid=1)
     redis_key = _build_media_redis_key()
     while client.llen(redis_key):
         media_id = client.lpop(redis_key)
