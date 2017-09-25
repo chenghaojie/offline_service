@@ -16,8 +16,8 @@ from lib import log
 from lib.config import MongoDbConfig
 
 LAST_CAL_ID_EXPIRE_TIME = 3600 * 24 * 30    # 缓存一个月,应该够了吧
-MEDIA_COUNT_LIMIT = 1000
-MEDIA_COUNT_THRESHOLD = 50
+MEDIA_COUNT_LIMIT = 1000    # 每次从数据库获取的media数量
+MEDIA_COUNT_THRESHOLD = 50  # 当缓存数量小于阈值时再次获取
 
 FEATURE_URL = "http://g00.me-yun.com:8001/local/feature?path=/tmp/renrenimg0724/%s.jpg"    # 人脸特征计算接口url
 
@@ -164,6 +164,7 @@ def start_face_cal():
         # 没有获取到的话就不更新了
         if face_ids:
             media_helper.update(media_id, {'$set': {'faces': face_ids}})
+            log.info('media face calculate finish: %s' % media_id)
 
 
 def insert_data_to_queue():
